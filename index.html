@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>PR-TCL Lyon</title>
+  <meta name="description" content="Disponibilité en temps réel de tous les Parcs Relais TCL Lyon" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0a0f1e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="PR-TCL" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap');
+    :root{--bg:#0a0f1e;--surface:#111827;--surface2:#162032;--border:#1e293b;--accent:#818cf8;--accent2:#38bdf8;--green:#4ade80;--orange:#fb923c;--red:#f87171;--gray:#475569;--text:#f1f5f9;--muted:#64748b}
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100dvh;display:flex;flex-direction:column;align-items:center;padding:24px 16px;position:relative}
+    body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:40px 40px;opacity:.3;pointer-events:none}
+    body::after{content:'';position:fixed;width:500px;height:500px;background:radial-gradient(circle,rgba(129,140,248,.06) 0%,transparent 70%);top:30%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+    .container{width:100%;max-width:420px;position:relative;z-index:1}
+    .header{text-align:center;margin-bottom:28px;animation:fadeUp .4s ease both}
+    .header-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(129,140,248,.1);border:1px solid rgba(129,140,248,.25);color:var(--accent);font-size:10px;letter-spacing:.15em;text-transform:uppercase;padding:5px 14px;border-radius:100px;margin-bottom:14px}
+    .header-badge::before{content:'';width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite}
+    .header-title{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+    .header-title span{color:var(--accent)}
+    .header-sub{color:var(--muted);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+    .search-wrap{position:relative;margin-bottom:16px;animation:fadeUp .4s ease .1s both}
+    .search-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px 14px 44px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;outline:none;transition:border-color .2s}
+    .search-input:focus{border-color:var(--accent)}
+    .search-input::placeholder{color:var(--muted)}
+    .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted)}
+    .count-bar{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;padding-left:4px;animation:fadeUp .4s ease .12s both}
+    .parking-list{display:flex;flex-direction:column;gap:8px;animation:fadeUp .4s ease .15s both}
+    .parking-item{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 18px;cursor:pointer;transition:border-color .2s,background .2s,transform .1s;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .parking-item:hover{border-color:var(--accent);background:var(--surface2)}
+    .parking-item:active{transform:scale(.98)}
+    .parking-item-left{flex:1;min-width:0}
+    .parking-item-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px}
+    .parking-item-meta{font-size:10px;color:var(--muted);letter-spacing:.08em}
+    .parking-item-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+    .dispo-badge{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;min-width:40px;text-align:right}
+    .dispo-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .chevron{color:var(--muted);flex-shrink:0}
+    .detail-view{display:none;animation:fadeUp .35s ease both}
+    .back-btn{display:inline-flex;align-items:center;gap:8px;background:rgba(129,140,248,.08);border:1px solid rgba(129,140,248,.2);color:var(--accent);font-family:'DM Mono',monospace;font-size:11px;padding:8px 16px;border-radius:100px;cursor:pointer;margin-bottom:20px;transition:background .2s;letter-spacing:.05em}
+    .back-btn:hover{background:rgba(129,140,248,.15)}
+    .detail-card{background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:32px 28px}
+    .detail-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(129,140,248,.1);border:1px solid rgba(129,140,248,.25);color:var(--accent);font-size:10px;letter-spacing:.15em;text-transform:uppercase;padding:5px 12px;border-radius:100px;margin-bottom:20px}
+    .detail-badge::before{content:'';width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite}
+    .detail-name{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;line-height:1.1;letter-spacing:-.02em;margin-bottom:32px}
+    .dispo-wrap{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+    .dispo-number{font-family:'Syne',sans-serif;font-size:72px;font-weight:800;line-height:1;letter-spacing:-.04em;transition:color .5s}
+    .dispo-label{color:var(--muted);font-size:12px;line-height:1.4}
+    .progress-wrap{margin:20px 0}
+    .progress-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);letter-spacing:.08em;margin-bottom:8px}
+    .progress-track{height:4px;background:var(--border);border-radius:99px;overflow:hidden}
+    .progress-fill{height:100%;border-radius:99px;transition:width .8s cubic-bezier(.16,1,.3,1),background .5s}
+    .status-pill{display:inline-flex;align-items:center;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:6px 14px;border-radius:100px;border:1px solid currentColor;margin-bottom:28px;transition:color .5s}
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:28px}
+    .info-cell{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:14px}
+    .info-cell-label{font-size:9px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px}
+    .info-cell-value{font-size:13px;font-weight:500}
+    .horaires-cell{grid-column:1/-1;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:14px}
+    .horaires-text{font-size:11px;color:var(--muted);line-height:1.6}
+    .detail-footer{display:flex;align-items:center;justify-content:space-between}
+    .update-time{font-size:10px;color:var(--muted)}
+    .refresh-btn{background:rgba(129,140,248,.08);border:1px solid rgba(129,140,248,.2);color:var(--accent);font-family:'DM Mono',monospace;font-size:11px;padding:8px 16px;border-radius:100px;cursor:pointer;letter-spacing:.05em;transition:background .2s,transform .1s;display:flex;align-items:center;gap:6px}
+    .refresh-btn:active{transform:scale(.96)}
+    .refresh-btn.spinning svg{animation:spin 1s linear infinite}
+    .error-msg{color:#f87171;font-size:12px;text-align:center;padding:12px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);border-radius:12px;margin-bottom:16px}
+    .loading-msg{text-align:center;color:var(--muted);font-size:12px;padding:40px 0}
+    .empty-msg{text-align:center;color:var(--muted);font-size:12px;padding:30px 0}
+    .c-green{color:#4ade80}.c-orange{color:#fb923c}.c-red{color:#f87171}.c-gray{color:#475569}
+    .b-green{background:#4ade80}.b-orange{background:#fb923c}.b-red{background:#f87171}.b-gray{background:#475569}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- VUE LISTE -->
+  <div id="list-view">
+    <div class="header">
+      <div class="header-badge">Temps réel · TCL Lyon</div>
+      <div class="header-title">PR-<span>TCL</span></div>
+      <div class="header-sub">Sélectionnez un parc relais</div>
+    </div>
+    <div class="search-wrap">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="search-input" id="search-input" type="text" placeholder="Rechercher un parc relais…" oninput="filterParkings()" />
+    </div>
+    <div class="count-bar" id="count-bar"></div>
+    <div id="error-list"></div>
+    <div class="parking-list" id="parking-list"><div class="loading-msg">⏳ Chargement des parkings…</div></div>
+  </div>
+
+  <!-- VUE DETAIL -->
+  <div class="detail-view" id="detail-view">
+    <button class="back-btn" onclick="showList()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+      Tous les parkings
+    </button>
+    <div class="detail-card">
+      <div class="detail-badge">Temps réel · TCL</div>
+      <div class="detail-name" id="detail-name">—</div>
+      <div id="detail-error"></div>
+      <div class="dispo-wrap">
+        <div class="dispo-number c-green" id="detail-num">—</div>
+        <div class="dispo-label">places<br>libres</div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-meta"><span>OCCUPATION</span><span id="detail-pct">—</span></div>
+        <div class="progress-track"><div class="progress-fill b-green" id="detail-progress" style="width:0%"></div></div>
+      </div>
+      <div class="status-pill c-green" id="detail-status">—</div>
+      <div class="info-grid">
+        <div class="info-cell"><div class="info-cell-label">Capacité totale</div><div class="info-cell-value" id="detail-cap">—</div></div>
+        <div class="info-cell"><div class="info-cell-label">Places PMR</div><div class="info-cell-value" id="detail-pmr">—</div></div>
+        <div class="horaires-cell"><div class="info-cell-label">Horaires</div><div class="horaires-text" id="detail-horaires">—</div></div>
+      </div>
+      <div class="detail-footer">
+        <div class="update-time" id="detail-update">—</div>
+        <button class="refresh-btn" id="refresh-btn" onclick="refreshDetail()">
+          <svg id="refresh-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+          Actualiser
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+const WORKER_URL="https://parcr-tcl.jean-luc-perrotto.workers.dev";
+let allParkings=[],selectedParking=null,refreshTimer=null;
+
+function getStatus(d,c){
+  if(d===null||d===-1||d===undefined)return{label:"Non disponible",cls:"gray",pct:0};
+  if(d===0)return{label:"Complet",cls:"red",pct:0};
+  const p=d/c;
+  if(p<=.2)return{label:"Presque plein",cls:"red",pct:Math.round(p*100)};
+  if(p<=.5)return{label:"Limité",cls:"orange",pct:Math.round(p*100)};
+  return{label:"Disponible",cls:"green",pct:Math.round(p*100)};
+}
+
+async function loadParkings(){
+  document.getElementById('error-list').innerHTML='';
+  document.getElementById('parking-list').innerHTML='<div class="loading-msg">⏳ Chargement…</div>';
+  document.getElementById('count-bar').textContent='';
+  try{
+    const res=await fetch(WORKER_URL);
+    if(!res.ok)throw new Error(`Erreur HTTP ${res.status}`);
+    allParkings=await res.json();
+    if(!Array.isArray(allParkings))throw new Error("Format inattendu");
+    renderList(allParkings);
+  }catch(e){
+    document.getElementById('error-list').innerHTML=`<div class="error-msg">⚠️ ${e.message}</div>`;
+    document.getElementById('parking-list').innerHTML='';
+  }
+}
+
+function renderList(parkings){
+  const list=document.getElementById('parking-list');
+  const countBar=document.getElementById('count-bar');
+  const dispo=parkings.filter(p=>p.nb_tot_place_dispo>0).length;
+  countBar.textContent=`${parkings.length} parkings · ${dispo} avec places disponibles`;
+  if(!parkings.length){list.innerHTML='<div class="empty-msg">Aucun résultat</div>';return;}
+  list.innerHTML=parkings.map(p=>{
+    const s=getStatus(p.nb_tot_place_dispo,p.capacite);
+    const num=(p.nb_tot_place_dispo===null||p.nb_tot_place_dispo===-1)?"—":p.nb_tot_place_dispo;
+    const nom=p.nom.replace('Parc Relais TCL ','');
+    return`<div class="parking-item" onclick="showDetail('${p.id}')">
+      <div class="parking-item-left">
+        <div class="parking-item-name">${nom}</div>
+        <div class="parking-item-meta">${p.capacite} places · ${p.p_surv?'Surveillé':'Non surveillé'}</div>
+      </div>
+      <div class="parking-item-right">
+        <div class="dispo-badge c-${s.cls}">${num}</div>
+        <div class="dispo-dot b-${s.cls}"></div>
+        <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterParkings(){
+  const q=document.getElementById('search-input').value.toLowerCase().trim();
+  renderList(q?allParkings.filter(p=>p.nom.toLowerCase().includes(q)||p.id.toLowerCase().includes(q)):allParkings);
+}
+
+function showDetail(id){
+  selectedParking=allParkings.find(p=>p.id===id);
+  if(!selectedParking)return;
+  document.getElementById('list-view').style.display='none';
+  document.getElementById('detail-view').style.display='block';
+  document.getElementById('detail-name').textContent=selectedParking.nom.replace('Parc Relais TCL ','');
+  updateDetail(selectedParking);
+  if(refreshTimer)clearInterval(refreshTimer);
+  refreshTimer=setInterval(refreshDetail,120000);
+}
+
+function showList(){
+  if(refreshTimer)clearInterval(refreshTimer);
+  selectedParking=null;
+  document.getElementById('detail-view').style.display='none';
+  document.getElementById('list-view').style.display='block';
+  loadParkings();
+}
+
+async function refreshDetail(){
+  const btn=document.getElementById('refresh-btn');
+  btn.disabled=true;btn.classList.add('spinning');
+  document.getElementById('detail-error').innerHTML='';
+  try{
+    const res=await fetch(WORKER_URL);
+    if(!res.ok)throw new Error(`Erreur HTTP ${res.status}`);
+    const data=await res.json();
+    const p=data.find(x=>x.id===selectedParking.id);
+    if(!p)throw new Error("Parking introuvable");
+    selectedParking=p;updateDetail(p);
+  }catch(e){
+    document.getElementById('detail-error').innerHTML=`<div class="error-msg">⚠️ ${e.message}</div>`;
+  }finally{
+    btn.disabled=false;btn.classList.remove('spinning');
+  }
+}
+
+function updateDetail(p){
+  const s=getStatus(p.nb_tot_place_dispo,p.capacite);
+  document.getElementById('detail-num').textContent=(p.nb_tot_place_dispo===null||p.nb_tot_place_dispo===-1)?"—":p.nb_tot_place_dispo;
+  document.getElementById('detail-cap').textContent=p.capacite+' places';
+  document.getElementById('detail-pmr').textContent=p.place_handi+' places';
+  document.getElementById('detail-horaires').textContent=p.horaires||'—';
+  document.getElementById('detail-pct').textContent=s.pct?`${100-s.pct}% occupé`:'—';
+  document.getElementById('detail-progress').style.width=s.pct+'%';
+  document.getElementById('detail-status').textContent=s.label;
+  document.getElementById('detail-update').textContent='màj '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('detail-num').className=`dispo-number c-${s.cls}`;
+  document.getElementById('detail-progress').className=`progress-fill b-${s.cls}`;
+  document.getElementById('detail-status').className=`status-pill c-${s.cls}`;
+}
+
+loadParkings();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
